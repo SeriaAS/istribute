@@ -1,0 +1,10 @@
+{
+	"name": "Seria/istributeSdk",
+	"require": {
+	},
+	"autoload": {
+		"psr-0": {
+			"Seria\\istributeSdk": "src/Seria/istributeSdk"
+		}
+	}
+}
