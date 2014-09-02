@@ -1,0 +1,9 @@
+<?php
+
+return array(
+	'istribute' => array(
+		'serverUrl' => 'https://api.istribute.com',
+		'appId' => '',
+		'appKey' => ''
+	)
+);
