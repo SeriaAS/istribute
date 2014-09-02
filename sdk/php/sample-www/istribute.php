@@ -6,7 +6,7 @@ if (!file_exists($configFilename)) {
 }
 $config = require($configFilename);
 
-require_once(dirname(__DIR__).'/sdk/src/istribute.php');
+require_once(dirname(__DIR__).'/src/istribute.php');
 
 $istribute = new \Seria\istributeSdk\Istribute($config['istribute']['appId'], $config['istribute']['appKey'], $config['istribute']['serverUrl']);
 
