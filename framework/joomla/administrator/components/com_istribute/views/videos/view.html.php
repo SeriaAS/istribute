@@ -26,8 +26,6 @@ class IstributeViewVideos extends JViewLegacy {
 		$istributeAppId = $this->config->get('istribute.api.appid', '');
 		$istributeAppKey = $this->config->get('istribute.api.appkey', '');
 
-		$this->istribute = NULL;
-
 		parent::display($tpl);
 		echo JHtml::_('behavior.keepalive');
 	}
