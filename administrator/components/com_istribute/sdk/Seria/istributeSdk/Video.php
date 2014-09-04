@@ -78,7 +78,7 @@ class Video extends IstributeObject {
 	 * @return string Url to preview image.
 	 */
 	public function getPreviewImage() {
-		return $this->getData()->previewImage;
+		return $this->istribute->getServerUrl().$this->getData()->previewImage;
 	}
 	/**
 	 * @return float

@@ -2,6 +2,8 @@
 
 defined('_JEXEC') or die;
 
+require_once(__DIR__.'/sdk/istribute.php');
+
 class IstributeController extends JControllerLegacy {
 	public function display($cachable = false, $urlparams = false)
 	{
@@ -32,7 +34,8 @@ class IstributeController extends JControllerLegacy {
 			$istributeAppId = $config->get('istribute.api.appid', '');
 			$istributeAppKey = $config->get('istribute.api.appkey', '');
 		}
-
+		$message = NULL;
+		$istribute = NULL;
 		$vName = $this->input->get('view', 'videos');
 		switch ($vName)
 		{
@@ -46,6 +49,25 @@ class IstributeController extends JControllerLegacy {
 			default:
 				if (!$istributeUrl || !$istributeAppId || !$istributeAppKey)
 					$app->redirect('index.php?option=com_istribute&view=appkeys');
+				$istribute = new \Seria\istributeSdk\Istribute($istributeAppId, $istributeAppKey, $istributeUrl);
+				if (isset($_FILES['videoFile'])) {
+					if ($_FILES['videoFile']['error'] == 0) {
+						$filename = $_FILES['videoFile']['tmp_name'];
+						$video = $istribute->uploadVideo($filename);
+						if ($video !== NULL) {
+							if (isset($_POST['videoTitle'])) {
+								$video->setTitle($_POST['videoTitle']);
+								$video->save();
+							}
+							$message = 'Upload to istribute was successful. Your video will be available soon.';
+						} else {
+							$message = 'Video upload failed. Please try again!';
+						}
+						unlink($filename);
+					} else {
+						$message = 'Video upload failed. Please try again!';
+					}
+				}
 				$vLayout = $this->input->get('layout', 'default', 'string');
 				$mName = 'manager';
 
@@ -67,6 +89,9 @@ class IstributeController extends JControllerLegacy {
 
 		// Set the layout
 		$view->setLayout($vLayout);
+
+		$view->istribute = $istribute;
+		$view->message = $message;
 
 		// Display the view
 		$view->display();
