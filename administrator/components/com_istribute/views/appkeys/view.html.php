@@ -1,6 +1,6 @@
 <?php
 
-class IstributeViewVideos extends JViewLegacy {
+class IstributeViewAppkeys extends JViewLegacy {
 	public function display($tpl = null) {
 		$app	= JFactory::getApplication();
 		$config = JComponentHelper::getParams('com_istribute');
@@ -22,9 +22,9 @@ class IstributeViewVideos extends JViewLegacy {
 		$this->config = &$config;
 		$this->state = &$state;
 
-		$istributeUrl = $this->config->get('istribute.api.url', 'https://api.istribute.com');
-		$istributeAppId = $this->config->get('istribute.api.appid', '');
-		$istributeAppKey = $this->config->get('istribute.api.appkey', '');
+		$this->istributeUrl = $this->config->get('istribute.api.url', 'https://api.istribute.com');
+		$this->istributeAppId = $this->config->get('istribute.api.appid', '');
+		$this->istributeAppKey = $this->config->get('istribute.api.appkey', '');
 
 		$this->istribute = NULL;
 
