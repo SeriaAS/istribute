@@ -13,10 +13,10 @@
     <administration>
         <files folder="admin">
             <filename>istribute.php</filename>
+            <filename>controller.php</filename>
             <folder>controllers</folder>
             <folder>views</folder>
+            <folder>sdk</folder>
         </files>
-        <languages folder="admin">
-        </languages>
     </administration>
 </extension>
