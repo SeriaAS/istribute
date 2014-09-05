@@ -93,7 +93,7 @@ if ($this->message != NULL) {
 <script>
 	(function () {
 		setVideo = function (playerUrl, thumbnailUrl) {
-			window.parent.jInsertEditorText("<a href=\""+playerUrl+"\"><img src=\""+thumbnailUrl+"\" alt=\"Video content\"></a>", <?php echo json_encode($e_name); ?>);
+			window.parent.jInsertEditorText("<a class=\"istribute-embed-link\" href=\""+playerUrl+"\" target=\"_blank\"><img src=\""+thumbnailUrl+"\" alt=\"Video content\"></a>", <?php echo json_encode($e_name); ?>);
 			window.parent.SqueezeBox.close();
 		}
 	})();

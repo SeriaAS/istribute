@@ -41,14 +41,14 @@ class IstributeController extends JControllerLegacy {
 		{
 			case 'appkeys':
 				if ($istributeUrl && $istributeAppId && $istributeAppKey)
-					$app->redirect('index.php?option=com_istribute&view=videos');
+					$app->redirect('index.php?option=com_istribute&view=videos&e_name='.$this->input->get('e_name'));
 				$vLayout = $this->input->get('layout', 'default', 'string');
 				$mName = 'manager';
 				break;
 			case 'videos':
 			default:
 				if (!$istributeUrl || !$istributeAppId || !$istributeAppKey)
-					$app->redirect('index.php?option=com_istribute&view=appkeys');
+					$app->redirect('index.php?option=com_istribute&view=appkeys&e_name='.$this->input->get('e_name'));
 				$istribute = new \Seria\istributeSdk\Istribute($istributeAppId, $istributeAppKey, $istributeUrl);
 				if (isset($_FILES['videoFile'])) {
 					if ($_FILES['videoFile']['error'] == 0) {
