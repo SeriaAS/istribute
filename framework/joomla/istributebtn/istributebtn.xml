@@ -10,7 +10,7 @@
     <version>0.1.0</version>
     <description>Creates an Istribute-button in the editor</description>
     <files>
-        <filename plugin="istribute">istributebtn.php</filename>
+        <filename plugin="istributebtn">istributebtn.php</filename>
         <filename>index.html</filename>
     </files>
     <languages>
