@@ -50,6 +50,7 @@ if ($this->message != NULL) {
 }
 
 ?>
+<p><a href="<?php echo htmlspecialchars($this->updateAppkeysUrl); ?>">Change your appkeys</a></p>
 <form enctype="multipart/form-data" method="post">
 	<div>
 		<label>Upload a video file: <input type="file" name="videoFile"></label>
