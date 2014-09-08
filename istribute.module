@@ -83,9 +83,10 @@ function istribute_form_alter(&$form, &$form_state, $form_id) {
       '#progress_indicator' => 'bar',
       '#upload_location' => 'temporary://',
       '#upload_validators' => array(
-        'file_validate_extensions' => array('f4v'),
+        'file_validate_extensions' => array('f4v mp4'),
       ),
     );
+	$form['#submit'][] = 'istribute_form_submit';
   }
 }
 
@@ -93,13 +94,13 @@ function istribute_form_alter(&$form, &$form_state, $form_id) {
  * Implements hook_form_submit
  */
 function istribute_form_submit($form, &$form_state) {
-  if (substr($form_id, -10) == '_node_form') {
+  if (substr($form['#form_id'], -10) == '_node_form') {
     $istribute = new \Seria\istributeSdk\Istribute(
       variable_get('istribute_appid', ''),
       variable_get('istribute_appkey', ''),
       'https://'.variable_get('istribute_endpoint', '')
     );
-    $istribute->uploadVideo($form['istribute']['istribute_video_upload']->uri);
+    $istribute->uploadVideo($form['istribute']['istribute_video_upload']['#file']->uri);
   }
 }
 
