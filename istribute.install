@@ -1,0 +1,57 @@
+<?php
+/**
+ * @file
+ * Install, update, and uninstall functions for the istribute module
+ */
+
+function istribute_enable() {
+  if (db_table_exists('istribute_videos') == FALSE) {
+    drupal_install_schema('istribute');
+  }
+}
+/**
+ * Implements hook_schema()
+ */
+function istribute_schema() {
+  $schema['istribute_videos'] = array(
+    'description' => 'Store per-revision Istribute video id for {node}',
+    'fields' => array(
+      'nid' => array(
+        'description' => 'The primary identifier for a node.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'vid' => array(
+        'description' => 'Revision number.',
+        'type' => 'int',
+        'unsigned' => TRUE,
+        'not null' => TRUE,
+      ),
+      'videoid' => array(
+        'type' => 'varchar',
+        'length' => 60,
+        'not null' => TRUE,
+      ),
+      'status' => array(
+        'type' => 'varchar',
+        'length' => 50,
+        'not null' => TRUE,
+        'default' => '',
+      ),
+      'serverdata' => array(
+        'description' => 'Tells us if the server is syncronized with metadata such as title',
+        'type' => 'int',
+        'length' => 1,
+        'not null' => TRUE,
+        'default' => 0,
+      ),
+    ),
+    'primary key' => array('nid', 'vid'),
+    'indexes' => array(
+      'istr_videoid' => array('videoid'),
+      'istr_serverdata' => array('serverdata'),
+    ),
+  );
+  return $schema;
+}
