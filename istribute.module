@@ -77,6 +77,29 @@ function istribute_form_alter(&$form, &$form_state, $form_id) {
       //'#theme' => 'istribute_field',
       '#default_value' => $defaultValue,
     );
+    $form['istribute']['istribute_video_upload'] = array(
+      '#type' => 'managed_file',
+      '#title' => t('Upload a video'),
+      '#progress_indicator' => 'bar',
+      '#upload_location' => 'temporary://',
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('f4v'),
+      ),
+    );
+  }
+}
+
+/**
+ * Implements hook_form_submit
+ */
+function istribute_form_submit($form, &$form_state) {
+  if (substr($form_id, -10) == '_node_form') {
+    $istribute = new \Seria\istributeSdk\Istribute(
+      variable_get('istribute_appid', ''),
+      variable_get('istribute_appkey', ''),
+      'https://'.variable_get('istribute_endpoint', '')
+    );
+    $istribute->uploadVideo($form['istribute']['istribute_video_upload']->uri);
   }
 }
 
