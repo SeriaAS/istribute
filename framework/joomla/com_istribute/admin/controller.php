@@ -29,10 +29,12 @@ class IstributeController extends JControllerLegacy {
 // Execute the query
 			$db->setQuery($query);
 			$db->execute();
+			$saved = TRUE;
 		} else {
 			$istributeUrl = $config->get('istribute.api.url', 'https://api.istribute.com');
 			$istributeAppId = $config->get('istribute.api.appid', '');
 			$istributeAppKey = $config->get('istribute.api.appkey', '');
+			$saved = FALSE;
 		}
 		$message = NULL;
 		$istribute = NULL;
@@ -40,7 +42,7 @@ class IstributeController extends JControllerLegacy {
 		switch ($vName)
 		{
 			case 'appkeys':
-				if ($istributeUrl && $istributeAppId && $istributeAppKey)
+				if ($saved && $istributeUrl && $istributeAppId && $istributeAppKey)
 					$app->redirect('index.php?option=com_istribute&view=videos&e_name='.$this->input->get('e_name'));
 				$vLayout = $this->input->get('layout', 'default', 'string');
 				$mName = 'manager';
@@ -92,6 +94,7 @@ class IstributeController extends JControllerLegacy {
 
 		$view->istribute = $istribute;
 		$view->message = $message;
+		$view->updateAppkeysUrl = 'index.php?option=com_istribute&view=appkeys&e_name='.$this->input->get('e_name');
 
 		// Display the view
 		$view->display();
