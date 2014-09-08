@@ -10,8 +10,8 @@
     <packagerurl>http://seria.no/</packagerurl>
     <description>A package that includes the component and plugins for istribute.</description>
     <files folder="packages">
-        <file type="component" id="istribute">com_istribute.zip</file>
-        <file type="plugin" id="istributebtn">istributebtn.zip</file>
-        <file type="plugin" id="istributeview">istributeview.zip</file>
+        <file type="component" id="com_istribute">com_istribute.zip</file>
+        <file type="plugin" id="istributebtn" group="editors-xtd">istributebtn.zip</file>
+        <file type="plugin" id="istributeview" group="content">istributeview.zip</file>
     </files>
 </extension>
