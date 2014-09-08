@@ -9,6 +9,7 @@
     <authorUrl>seria.no</authorUrl>
     <version>0.1.0</version>
     <description>Creates an Istribute-button in the editor</description>
+    <scriptfile>installscript.php</scriptfile>
     <files>
         <filename plugin="istributebtn">istributebtn.php</filename>
         <filename>index.html</filename>
