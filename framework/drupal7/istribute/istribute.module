@@ -1,0 +1,346 @@
+<?php
+/**
+ * @file
+ * Istribute.com integration module.
+ */
+
+module_load_include('php', 'istribute', '/sdk/istribute');
+
+/**
+ * Implements hook_form_alter()
+ */
+function istribute_form_alter(&$form, &$form_state, $form_id) {
+  if (substr($form_id, -10) == '_node_form') {
+    /**
+     * The edit node form
+     */
+    $js_settings = array('ajaxpath' => url('istribute/ajax'));
+    $form['#attached']['js'][] = array(
+      'data' => drupal_get_path('module', 'istribute').'/istribute.js',
+      'type' => 'file',
+    );
+    $form['#attached']['js'][] = array(
+      'data' => array('istribute' => $js_settings),
+      'type' => 'setting',
+    );
+    $form['istribute'] = array(
+      '#type' => 'fieldset',
+      '#weight' => -4,
+      '#title' => t('Attach a video'),
+    );
+
+    $defaultValue = '';
+    if (isset($form['#node']->istribute_video)) {
+      $defaultValue = $form['#node']->istribute_video;
+    }
+    $form['istribute']['istribute_video'] = array(
+      '#type' => 'tableselect',
+      '#multiple' => FALSE,
+      '#header' => array(
+        'thumbnail' => '',
+        'title' => t('Title'),
+      ),
+      '#empty' => t('No videos available. Please upload one.'),
+      '#options' => _istribute_get_videos_options(),
+      '#title' => t('Choose a video'),
+      '#weight' => 0,
+      '#default_value' => $defaultValue,
+    );
+    $form['istribute']['istribute_video_upload'] = array(
+      '#type' => 'managed_file',
+      '#title' => t('Upload a video'),
+      '#progress_indicator' => 'bar',
+      '#upload_location' => 'temporary://',
+      '#upload_validators' => array(
+        'file_validate_extensions' => array('f4v mp4'),
+        '_istribute_upload_video' => array(),
+      ),
+    );
+  }
+}
+
+function _istribute_get_videos_options($istribute = NULL) {
+  $endpoint = 'https://'.variable_get('istribute_endpoint', '');
+  if (!$istribute) {
+    $istribute = new \Seria\istributeSdk\Istribute(
+      variable_get('istribute_appid', ''),
+      variable_get('istribute_appkey', ''),
+      $endpoint
+    );
+  }
+  $videos = $istribute->getVideoList();
+  $options = array(
+    '' => array('thumbnail' => '', 'title' => t('(No video selected)')),
+  );
+  foreach ($videos as $video) {
+    $thumb = $video->getPreviewImage();
+    $options[$video->getId()] = array(
+      'thumbnail' => ($thumb ? '<img src="'.$endpoint.'/'.$thumb.'" alt="" style="max-width: 50px;" />' : ''),
+      'title' => $video->getTitle()
+    );
+  }
+  return $options;
+}
+
+function _istribute_upload_video($file) {
+  $errors = array();
+  $istribute = new \Seria\istributeSdk\Istribute(
+    variable_get('istribute_appid', ''),
+    variable_get('istribute_appkey', ''),
+    'https://'.variable_get('istribute_endpoint', '')
+  );
+  $video = $istribute->uploadVideo($file->uri);
+  if ($video == NULL) {
+    $errors[] = t('Unable to upload file %uri to Istribute.com', array('%uri' => $file->uri));
+  }
+  else {
+    $video->setTitle($file->filename);
+    $video->save();
+  }
+  return $errors;
+}
+
+/**
+ * Implements hook_menu()
+ */
+function istribute_menu() {
+  $items['admin/settings/istribute'] = array(
+    'title' => t('Istribute.com video settings'),
+    'description' => t('Configure your Istribute.com video settings'),
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('_istribute_admin_page'),
+    'access arguments' => array('access administration pages'),
+    'type' => MENU_NORMAL_ITEM,
+  );
+  $items['istribute/ajax/videoselect'] = array(
+    'title' => t('Istribute video select box'),
+    'page callback' => 'istribute_ajax_videoselect',
+    'access arguments' => array('access content'),
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+/**
+ * Callback for istribute_menu rendering the admin/settings/istribute page
+ */
+function _istribute_admin_page() {
+  $form = array();
+  $form['istribute_player_settings'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Player settings'),
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    'istribute_playerwidth' => array(
+      '#type' => 'textfield',
+      '#title' => t('Default player width'),
+      '#default_value' => variable_get('istribute_playerwidth', '426'),
+      '#size' => 4,
+      '#maxlength' => 4,
+      '#description' => t('The width of the video player in pixels.'),
+      '#required' => TRUE,
+    ),
+    'istribute_playerheightauto' => array(
+      '#type' => 'checkbox',
+      '#title' => t('Automatic player height'),
+      '#default_value' => variable_get('istribute_playerheightauto', '1'),
+      '#description' => t('If checked, the video player will adjust its height according to the video aspect ratio.'),
+      '#required' => TRUE,
+    ),
+    'istribute_playerheight' => array(
+      '#type' => 'textfield',
+      '#title' => t('Default player height'),
+      '#default_value' => variable_get('istribute_playerheight', ''),
+      '#size' => 4,
+      '#maxlength' => 4,
+      '#description' => t('The height of the video player.'),
+      '#required' => FALSE,
+      '#disabled' => variable_get('istribute_playerheightauto', '') ? TRUE : FALSE,
+    ),
+  );
+  $form['istribute_access'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Istribute.com account info'),
+    '#description' => '',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    'istribute_endpoint' => array(
+      '#type' => 'textfield',
+      '#title' => t('API endpoint'),
+      '#description' => t('Use "api.istribute.com" for production use.'),
+      '#default_value' => variable_get('istribute_endpoint', 'api.istribute.com'),
+    ),
+    'istribute_appid' => array(
+      '#type' => 'textfield',
+      '#title' => t('Application id'),
+      '#default_value' => variable_get('istribute_appid', ''),
+      '#size' => 11,
+      '#maxlength' => 11,
+      '#description' => t('The application id identifies your application to Istribute.'),
+      '#required' => TRUE,
+    ),
+    'istribute_appkey' => array(
+      '#type' => 'textfield',
+      '#title' => t('Secret application key'),
+      '#default_value' => variable_get('istribute_appkey', ''),
+      '#size' => 40,
+      '#maxlength' => 40,
+      '#description' => t('The secret application key is used to sign requests to the Istribute API.'),
+      '#required' => TRUE,
+    ),
+  );
+
+  return system_settings_form($form);
+}
+
+function istribute_ajax_videoselect() {
+  drupal_json_output(_istribute_get_videos_options());
+  drupal_exit();
+}
+
+/**
+ * Implements hook_help().
+ *
+ * Displays help and module information.
+ *
+ * @param path
+ *   Which path of the site we're using to display help
+ * @param arg
+ *   Array that holds the current path as returned from arg() function
+ */
+function istribute_help($path, $arg) {
+  switch ($path) {
+    case 'admin/help#istribute':
+      return '<p>'.t("Istribute.com video streaming allows users to upload and
+      embed videos using Istribute.com cloud video hosting. With Istribute.com
+      everything from video converting to streaming is handled transparently
+      and automatically. The video player also works on smartphones and tablets
+      such as the iPad.").'</p>';
+  }
+}
+
+/**
+ * Implements hook_node_delete()
+ */
+function istribute_node_delete($node) {
+  db_delete('istribute_videos')->condition(array(
+    'nid' => $node->nid,
+  ))->execute();
+  // TODO: delete video
+}
+
+/**
+ * Implements hook_node_insert()
+ */
+function istribute_node_insert($node) {
+  if ($node->istribute_video) {
+    db_insert('istribute_videos')->fields(array(
+      'nid' => $node->nid,
+      'vid' => $node->vid,
+      'videoid' => $node->istribute_video,
+    ))->execute();
+  }
+}
+
+/**
+ * Implements hook_node_load()
+ */
+function istribute_node_load($nodes, $types) {
+  foreach ($nodes as $node) {
+    $result = db_query(
+      'SELECT videoid FROM {istribute_videos} WHERE nid = :nid AND vid = :vid',
+      array('nid' => $node->nid, 'vid' => $node->vid)
+    )->fetchAssoc();
+    $node->istribute_video = $result['videoid'];
+  }
+}
+
+/**
+ * Implements hook_node_revision_delete()
+ */
+function istribute_node_revision_delete($node) {
+  db_delete('istribute_videos')
+    ->condition('nid', $node->nid)
+    ->condition('vid', $node->vid)
+    ->execute();
+  // TODO: if there are no more refs, delete video
+}
+
+/**
+ * Implements hook_node_update()
+ */
+function istribute_node_update($node) {
+  db_delete('istribute_videos')
+    ->condition('nid', $node->nid)
+    ->condition('vid', $node->vid)
+    ->execute();
+  istribute_node_insert($node);
+}
+
+/**
+ * Implements hook_node_view()
+ */
+function istribute_node_view($node, $view_mode, $langcode) {
+  // TODO: remove hardcoded value
+  $appId = 'tZgTUJT';
+  if ($appId && !empty($node->istribute_video)) {
+    $node->content['istribute_video'] = array(
+      '#markup' => theme('istribute_player', array('element' => $node)),
+      '#weight' => 0,
+    );
+  }
+}
+
+/**
+ * Implements hook_theme()
+ */
+function istribute_theme() {
+  return array(
+    'istribute_player' => array(
+      'variables' => array(
+        'element' => NULL, 'width' => NULL, 'height' => NULL, 'id' => NULL,
+      ),
+    ),
+  );
+}
+
+/**
+ * Theme for the video player
+ */
+function theme_istribute_player($variables) {
+  extract($variables);
+  if (empty($element->istribute_video)) {
+    return;
+  }
+  $istribute = new \Seria\istributeSdk\Istribute(
+    variable_get('istribute_appid', ''),
+    variable_get('istribute_appkey', ''),
+    'https://'.variable_get('istribute_endpoint', '')
+  );
+  $video = $istribute->getVideo($element->istribute_video);
+  $playerUrl = $video->getPlayerUrl();
+
+  if ($width === NULL) {
+    $width = variable_get('istribute_playerwidth', '426');
+  }
+  if ($height === NULL) {
+    if (variable_get('istribute_playerheightauto', '1')) {
+      $aspect = $video->getAspect();
+      if (!$aspect) {
+        $aspect = 16 / 9;
+      }
+      $height = intval($width / $aspect);
+    }
+    else if ($height = variable_get('istribute_playerheight', 0)) {
+    }
+    else {
+      $height = intval($width / (16 / 9));
+    }
+  }
+
+  return '<iframe'.($id!=NULL?' id="'.$id.'"':'')
+    .' src="'.$playerUrl.'" width="'.$width.'" height="'.$height
+    .'" class="istribute_video" allowfullscreen="true"'
+    .' webkitallowfullscreen="true" mozallowfullscreen="true"></iframe>';
+}
