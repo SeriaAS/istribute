@@ -75,7 +75,7 @@ function _istribute_get_videos_options($istribute = NULL) {
   foreach ($videos as $video) {
     $thumb = $video->getPreviewImage();
     $options[$video->getId()] = array(
-      'thumbnail' => ($thumb ? '<img src="'.$endpoint.'/'.$thumb.'" alt="" style="max-width: 50px;" />' : ''),
+      'thumbnail' => ($thumb ? '<img src="'.$thumb.'" alt="" style="max-width: 50px;" />' : ''),
       'title' => $video->getTitle()
     );
   }
