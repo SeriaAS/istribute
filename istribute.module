@@ -10,43 +10,19 @@ module_load_include('php', 'istribute', '/sdk/istribute');
  * Implements hook_form_alter()
  */
 function istribute_form_alter(&$form, &$form_state, $form_id) {
-  if ($form_id == 'node_type_form' && isset($form['identity']['type'])) {
-    /**
-     * The edit content type form
-     */
-    $form['istribute'] = array(
-      '#type' => 'fieldset',
-      '#title' => t('Istribute.com video streaming'),
-      '#collapsible' => TRUE,
-      '#collapsed' => TRUE,
-    );
-    $form['istribute']['istribute_video'] = array(
-      '#type' => 'radios',
-      '#title' => t('Enable video streaming'),
-      '#default_value' => variable_get('istribute_video_'.$form['#node_type']->type, 0),
-      '#collapsible' => FALSE,
-      '#options' => array(t('Disabled'), t('Enabled')),
-      '#description' => t('Allow users to attach videos to nodes.'),
-    );
-
-    $form['istribute']['istribute_videorequired'] = array(
-      '#type' => 'radios',
-      '#title' => t('Video required?'),
-      '#default_value' => variable_get(
-        'istribute_videorequired_'.$form['#node_type']->type, 0
-      ),
-      '#collapsible' => FALSE,
-      '#options' => array(t('No'), t('Yes')),
-      '#description' => t('Require that videos are attached.'),
-    );
-  }
-  else if (
-    substr($form_id, -10) == '_node_form' && true
-    //variable_get('istribute_video_'.($nodetype = substr($form_id, 0, -10)), 0)
-  ) {
+  if (substr($form_id, -10) == '_node_form') {
     /**
      * The edit node form
      */
+    $js_settings = array('ajaxpath' => url('istribute/ajax'));
+    $form['#attached']['js'][] = array(
+      'data' => drupal_get_path('module', 'istribute').'/istribute.js',
+      'type' => 'file',
+    );
+    $form['#attached']['js'][] = array(
+      'data' => array('istribute' => $js_settings),
+      'type' => 'setting',
+    );
     $form['istribute'] = array(
       '#type' => 'fieldset',
       '#weight' => -4,
@@ -57,24 +33,11 @@ function istribute_form_alter(&$form, &$form_state, $form_id) {
     if (isset($form['#node']->istribute_video)) {
       $defaultValue = $form['#node']->istribute_video;
     }
-    $istribute = new \Seria\istributeSdk\Istribute(
-      variable_get('istribute_appid', ''),
-      variable_get('istribute_appkey', ''),
-      'https://'.variable_get('istribute_endpoint', '')
-    );
-    $videos = $istribute->getVideoList();
-    $options = array(
-      '' => t('(No video selected)'),
-    );
-    foreach ($videos as $video) {
-      $options[$video->getId()] = $video->getTitle();
-    }
     $form['istribute']['istribute_video'] = array(
       '#type' => 'select',
-      '#options' => $options,
+      '#options' => _istribute_get_videos_options(),
       '#title' => t('Choose a video'),
       '#weight' => 0,
-      //'#theme' => 'istribute_field',
       '#default_value' => $defaultValue,
     );
     $form['istribute']['istribute_video_upload'] = array(
@@ -84,24 +47,46 @@ function istribute_form_alter(&$form, &$form_state, $form_id) {
       '#upload_location' => 'temporary://',
       '#upload_validators' => array(
         'file_validate_extensions' => array('f4v mp4'),
+        '_istribute_upload_video' => array(),
       ),
     );
-	$form['#submit'][] = 'istribute_form_submit';
   }
 }
 
-/**
- * Implements hook_form_submit
- */
-function istribute_form_submit($form, &$form_state) {
-  if (substr($form['#form_id'], -10) == '_node_form') {
+function _istribute_get_videos_options($istribute = NULL) {
+  if (!$istribute) {
     $istribute = new \Seria\istributeSdk\Istribute(
       variable_get('istribute_appid', ''),
       variable_get('istribute_appkey', ''),
       'https://'.variable_get('istribute_endpoint', '')
     );
-    $istribute->uploadVideo($form['istribute']['istribute_video_upload']['#file']->uri);
   }
+  $videos = $istribute->getVideoList();
+  $options = array(
+    '' => t('(No video selected)'),
+  );
+  foreach ($videos as $video) {
+    $options[$video->getId()] = $video->getTitle();
+  }
+  return $options;
+}
+
+function _istribute_upload_video($file) {
+  $errors = array();
+  $istribute = new \Seria\istributeSdk\Istribute(
+    variable_get('istribute_appid', ''),
+    variable_get('istribute_appkey', ''),
+    'https://'.variable_get('istribute_endpoint', '')
+  );
+  $video = $istribute->uploadVideo($file->uri);
+  if ($video == NULL) {
+    $errors[] = t('Unable to upload file %uri to Istribute.com', array('%uri' => $file->uri));
+  }
+  else {
+    $video->setTitle($file->filename);
+    $video->save();
+  }
+  return $errors;
 }
 
 /**
@@ -115,6 +100,13 @@ function istribute_menu() {
     'page arguments' => array('_istribute_admin_page'),
     'access arguments' => array('access administration pages'),
     'type' => MENU_NORMAL_ITEM,
+  );
+  $items['istribute/ajax/videoselect'] = array(
+    'title' => t('Istribute video select box'),
+    'page callback' => 'istribute_ajax_videoselect',
+    'access arguments' => array('access content'),
+    'access callback' => TRUE,
+    'type' => MENU_CALLBACK,
   );
   return $items;
 }
@@ -189,6 +181,11 @@ function _istribute_admin_page() {
   );
 
   return system_settings_form($form);
+}
+
+function istribute_ajax_videoselect() {
+  drupal_json_output(_istribute_get_videos_options());
+  drupal_exit();
 }
 
 /**
@@ -311,8 +308,6 @@ function theme_istribute_player($variables) {
     'https://'.variable_get('istribute_endpoint', '')
   );
   $video = $istribute->getVideo($element->istribute_video);
-  //$videos = $istribute->getVideoList();
-  //$video = $videos->current();
   $playerUrl = $video->getPlayerUrl();
 
   if ($width === NULL) {
