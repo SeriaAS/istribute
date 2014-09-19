@@ -34,7 +34,13 @@ function istribute_form_alter(&$form, &$form_state, $form_id) {
       $defaultValue = $form['#node']->istribute_video;
     }
     $form['istribute']['istribute_video'] = array(
-      '#type' => 'select',
+      '#type' => 'tableselect',
+      '#multiple' => FALSE,
+      '#header' => array(
+        'thumbnail' => '',
+        'title' => t('Title'),
+      ),
+      '#empty' => t('No videos available. Please upload one.'),
       '#options' => _istribute_get_videos_options(),
       '#title' => t('Choose a video'),
       '#weight' => 0,
@@ -54,19 +60,24 @@ function istribute_form_alter(&$form, &$form_state, $form_id) {
 }
 
 function _istribute_get_videos_options($istribute = NULL) {
+  $endpoint = 'https://'.variable_get('istribute_endpoint', '');
   if (!$istribute) {
     $istribute = new \Seria\istributeSdk\Istribute(
       variable_get('istribute_appid', ''),
       variable_get('istribute_appkey', ''),
-      'https://'.variable_get('istribute_endpoint', '')
+      $endpoint
     );
   }
   $videos = $istribute->getVideoList();
   $options = array(
-    '' => t('(No video selected)'),
+    '' => array('thumbnail' => '', 'title' => t('(No video selected)')),
   );
   foreach ($videos as $video) {
-    $options[$video->getId()] = $video->getTitle();
+    $thumb = $video->getPreviewImage();
+    $options[$video->getId()] = array(
+      'thumbnail' => ($thumb ? '<img src="'.$endpoint.'/'.$thumb.'" alt="" style="max-width: 50px;" />' : ''),
+      'title' => $video->getTitle()
+    );
   }
   return $options;
 }
