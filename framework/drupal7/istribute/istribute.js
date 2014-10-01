@@ -6,13 +6,7 @@
       if ($fid.length && fid != +$fid.val()) {
         fid = +$fid.val();
         if (fid) {
-          $.getJSON(Drupal.settings.istribute.ajaxpath + '/videoselect', function (data) {
-            var options = [];
-            for (var key in data) {
-              options[options.length] = '<option value="' + key + '">' + data[key] + '</option>';
-            }
-            $('[name=istribute_video]').html(options.join(''));
-          });
+          $('[name=istribute_video]').trigger('istribute-reload');
         }
       }
     }

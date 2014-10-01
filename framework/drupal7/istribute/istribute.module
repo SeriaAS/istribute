@@ -43,6 +43,13 @@ function istribute_form_alter(&$form, &$form_state, $form_id) {
       '#empty' => t('No videos available. Please upload one.'),
       '#options' => _istribute_get_videos_options(),
       '#title' => t('Choose a video'),
+      '#prefix' => '<div id="istribute_video-ajax-wrapper">',
+      '#suffix' => '</div>',
+      '#ajax' => array(
+        'callback' => '_istribute_video_ajax_callback',
+        'wrapper' => 'istribute_video-ajax-wrapper',
+        'event' => 'istribute-reload',
+      ),
       '#weight' => 0,
       '#default_value' => $defaultValue,
     );
@@ -57,6 +64,10 @@ function istribute_form_alter(&$form, &$form_state, $form_id) {
       ),
     );
   }
+}
+
+function _istribute_video_ajax_callback($form, &$form_state) {
+  return $form['istribute']['istribute_video'];
 }
 
 function _istribute_get_videos_options($istribute = NULL) {
@@ -75,7 +86,7 @@ function _istribute_get_videos_options($istribute = NULL) {
   foreach ($videos as $video) {
     $thumb = $video->getPreviewImage();
     $options[$video->getId()] = array(
-      'thumbnail' => ($thumb ? '<img src="'.$endpoint.'/'.$thumb.'" alt="" style="max-width: 50px;" />' : ''),
+      'thumbnail' => ($thumb ? '<img src="'.$thumb.'" alt="" style="max-width: 50px;" />' : ''),
       'title' => $video->getTitle()
     );
   }
@@ -111,13 +122,6 @@ function istribute_menu() {
     'page arguments' => array('_istribute_admin_page'),
     'access arguments' => array('access administration pages'),
     'type' => MENU_NORMAL_ITEM,
-  );
-  $items['istribute/ajax/videoselect'] = array(
-    'title' => t('Istribute video select box'),
-    'page callback' => 'istribute_ajax_videoselect',
-    'access arguments' => array('access content'),
-    'access callback' => TRUE,
-    'type' => MENU_CALLBACK,
   );
   return $items;
 }
@@ -192,11 +196,6 @@ function _istribute_admin_page() {
   );
 
   return system_settings_form($form);
-}
-
-function istribute_ajax_videoselect() {
-  drupal_json_output(_istribute_get_videos_options());
-  drupal_exit();
 }
 
 /**
