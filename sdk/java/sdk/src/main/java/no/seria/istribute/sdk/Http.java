@@ -17,13 +17,16 @@ package no.seria.istribute.sdk;
 
 import no.seria.istribute.sdk.exception.InvalidResponseException;
 import no.seria.istribute.sdk.exception.IstributeErrorException;
+import org.apache.commons.codec.Charsets;
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.NameValuePair;
 import org.apache.http.client.entity.EntityBuilder;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.*;
+import org.apache.http.client.utils.URLEncodedUtils;
 import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
 import org.apache.http.entity.mime.MultipartEntityBuilder;
 import org.apache.http.entity.mime.content.FileBody;
 import org.apache.http.entity.mime.content.InputStreamBody;
@@ -36,6 +39,7 @@ import javax.crypto.spec.SecretKeySpec;
 import javax.json.*;
 import java.io.*;
 import java.net.URLEncoder;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -106,13 +110,13 @@ public class Http {
         }
         // Sign the path.
         String signature = null;
-        signature = URLEncoder.encode(hmacDigest(path, appKey, "HmacSHA256"), "UTF-8"); // TODO: Verify logic: anonymous Istribute has a null appKey.
+        signature = URLEncoder.encode(hmacDigest(fragment, appKey, "HmacSHA256"), "UTF-8"); // TODO: Verify logic: anonymous Istribute has a null appKey.
 
         // Construct full endpoint.
         return String.format("%s%s&signature=%s", serverUrl, fragment, signature);
     }
 
-    private <T extends JsonStructure>T parsePayload(String payload) {
+    private <T extends JsonStructure>T parsePayload(String payload) throws IstributeErrorException {
         T result;
 
         InputStream stream = new ByteArrayInputStream(payload.getBytes(StandardCharsets.UTF_8));
@@ -124,6 +128,20 @@ public class Http {
                 try (JsonReader jsonArrayReader = Json.createReader(stream)) {
                     result = (T) jsonArrayReader.readArray();
                 }
+            }
+        }
+        if (result instanceof JsonObject) {
+            JsonObject data = (JsonObject) result;
+            String error;
+            if (data.containsKey("error")) {
+                error = data.getString("error");
+                int code;
+                try {
+                    code = data.getInt("code");
+                } catch (Exception e) {
+                    code = 0;
+                }
+                throw new IstributeErrorException("[" + code + "] " + error);
             }
         }
         return result;
@@ -210,8 +228,12 @@ public class Http {
         for (Map.Entry<String, String> entry : fields.entrySet()) {
             postData.add(new BasicNameValuePair(entry.getKey(), entry.getValue()));
         }
+        Charset utf8 = Charsets.UTF_8;
+        String postEntityString = URLEncodedUtils.format(postData, utf8);
+        StringEntity postEntity = new StringEntity(postEntityString, ContentType.create(URLEncodedUtils.CONTENT_TYPE, utf8));
+        byte[] postEntityBytes = postEntityString.getBytes(utf8);
         // TODO: Review.
-        String postChecksum = DigestUtils.md5Hex(String.valueOf(postData.hashCode()).getBytes());
+        String postChecksum = DigestUtils.md5Hex(postEntityBytes);
 
         String endpoint;
         if (path.contains("?")) {
@@ -223,7 +245,7 @@ public class Http {
         String signedUrl = sign(endpoint);
         HttpPost httpPost = new HttpPost(signedUrl);
 
-        httpPost.setEntity(new UrlEncodedFormEntity(postData));
+        httpPost.setEntity(postEntity);
         String responseString = executeRequest(httpPost);
 
         return parsePayload(responseString);

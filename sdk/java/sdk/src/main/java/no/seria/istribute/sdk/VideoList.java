@@ -50,7 +50,7 @@ public class VideoList extends IstributeObject implements Iterator<String> {
             ids = new LinkedList<String>();
             JsonArray jsonIds = istribute.get("/v1/video/list/");
             for (int i = 0; i < jsonIds.size(); i++) {
-                String id = jsonIds.getJsonString(i).toString();
+                String id = jsonIds.getJsonString(i).getString();
                 ids.add(id);
             }
         }
@@ -59,12 +59,34 @@ public class VideoList extends IstributeObject implements Iterator<String> {
 
     @Override
     public boolean hasNext() {
-        return !ids.isEmpty();
+        /*
+         * Specific exceptions through an Iterator interface cannot be done.
+         */
+        try {
+            return !getIds().isEmpty();
+        } catch (IstributeErrorException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        } catch (InvalidResponseException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        } catch (IOException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
     }
 
     @Override
     public String next() {
-        return ids.poll();
+        /*
+         * Specific exceptions through an Iterator interface cannot be done.
+         */
+        try {
+            return getIds().poll();
+        } catch (IstributeErrorException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        } catch (InvalidResponseException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        } catch (IOException e) {
+            throw new RuntimeException(e.getMessage(), e);
+        }
     }
 
     @Override

@@ -23,13 +23,18 @@ import javax.json.JsonObject;
 import javax.json.JsonValue;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
+import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 public class Video extends IstributeObject {
 
     protected String id;
     protected JsonObject data;
+    protected String title = null;
+    protected boolean titleSet = false;
 
     public Video(Istribute istribute, String id) {
         super(istribute);
@@ -91,55 +96,59 @@ public class Video extends IstributeObject {
         return id;
     }
 
-    public String getTitle() {
-        return data.getString("title");
+    public String getTitle() throws IOException, InvalidResponseException, IstributeErrorException {
+        if (titleSet) {
+            return title;
+        } else {
+            return getData().getString("title");
+        }
     }
 
     public void setTitle(String title) {
-        if (data == null) {
+        this.title = title;
+        this.titleSet = true;
+    }
+
+    public String getState() throws IOException, InvalidResponseException, IstributeErrorException {
+        return getData().getString("state");
+    }
+
+    public String getPreviewImage() throws IOException, InvalidResponseException, IstributeErrorException {
+        return getData().getString("previewImage");
+    }
+
+    public float getAspect() throws IOException, InvalidResponseException, IstributeErrorException {
+        return Float.parseFloat(getData().getJsonNumber("aspect").toString());
+    }
+
+    public JsonArray getDownloadUrls() throws IOException, InvalidResponseException, IstributeErrorException {
+        return getData().getJsonArray("downloadUrls");
+    }
+
+    public String getThumbnailStatus() throws IOException, InvalidResponseException, IstributeErrorException {
+        return getData().getString("thumbnailStatus");
+    }
+
+    public String getIntervalThumbnailVtt() throws IOException, InvalidResponseException, IstributeErrorException {
+        return getData().getString("intervalThumbnailVtt");
+    }
+
+    public int getTimestamp() throws IOException, InvalidResponseException, IstributeErrorException {
+        return getData().getInt("timestamp");
+    }
+
+    public void save() throws IstributeErrorException, InvalidResponseException, IOException {
+        if (titleSet) {
+            Map<String,String> postPayload = new HashMap<String,String>();
+            postPayload.put("video_title", title);
+            String uri;
             try {
-                data = getData();
-            } catch (IstributeErrorException e) {
-                e.printStackTrace(); // TODO: Do something meaningful with the exception.
-            } catch (InvalidResponseException e) {
-                e.printStackTrace(); // TODO: Do something meaningful with the exception.
-            } catch (IOException e) {
-                e.printStackTrace();
+                uri = "/v1/video/edit/?videoId=" + URLEncoder.encode(id, "UTF-8");
+            } catch (UnsupportedEncodingException e) {
+                throw new RuntimeException("UTF-8 is supposed to work", e);
             }
+            JsonObject result = istribute.post(uri, postPayload);
+            System.out.println(result.toString());
         }
-        // TODO: Implement.
-    }
-
-    public String getState() {
-        return data.getString("state");
-    }
-
-    public String getPreviewImage() {
-        return data.getString("previewImage");
-    }
-
-    public float getAspect() {
-        return Float.parseFloat(data.getJsonNumber("aspect").toString());
-    }
-
-    public JsonArray getDownloadUrls() {
-        return data.getJsonArray("downloadUrls");
-    }
-
-    public String getThumbnailStatus() {
-        return data.getString("thumbnailStatus");
-    }
-
-    public String getIntervalThumbnailVtt() {
-        return data.getString("intervalThumbnailVtt");
-    }
-
-    public int getTimestamp() {
-        return data.getInt("timestamp");
-    }
-
-    public boolean save() {
-        // TODO: Implement.
-        return false;
     }
 }
