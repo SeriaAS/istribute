@@ -41,7 +41,7 @@ public class Istribute extends Http {
         return new Video(this, id);
     }
 
-    public Video uploadVideo(String filename) throws IOException, IstributeErrorException, InvalidResponseException {
+    public Video uploadVideo(String filename) throws IOException, IstributeErrorException, InvalidResponseException, FileNotFoundException {
         String url = String.format("/v1/video/put/?md5=%s", URLEncoder.encode(md5File(filename), "UTF-8"));
         JsonObject data = put(url, filename);
         if (data == null || data.getString("videoId") == null) {
@@ -55,18 +55,12 @@ public class Istribute extends Http {
         }
     }
 
-    private static String md5File(String filename) {
+    private static String md5File(String filename) throws FileNotFoundException, IOException {
         String result = null;
         FileInputStream fileInputStream = null;
-        try {
-            fileInputStream = new FileInputStream(new File(filename));
-            result = DigestUtils.md5Hex(fileInputStream);
-            fileInputStream.close();
-        } catch (FileNotFoundException e) {
-            e.printStackTrace(); // TODO: Do something meaningful with the exception (or re-throw it).
-        } catch (IOException e) {
-            e.printStackTrace(); // TODO: Do something meaningful with the exception (or re-throw it).
-        }
+        fileInputStream = new FileInputStream(new File(filename));
+        result = DigestUtils.md5Hex(fileInputStream);
+        fileInputStream.close();
         return result;
     }
 }
