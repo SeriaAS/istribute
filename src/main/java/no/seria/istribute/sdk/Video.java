@@ -148,7 +148,27 @@ public class Video extends IstributeObject {
                 throw new RuntimeException("UTF-8 is supposed to work", e);
             }
             JsonObject result = istribute.post(uri, postPayload);
-            System.out.println(result.toString());
+            if (result.containsKey("status")) {
+                if (result.getBoolean("status")) {
+                    return; /* Ok */
+                }
+            }
+            throw new InvalidResponseException("This kind of API response was not expected");
         }
+    }
+    public void delete() throws IstributeErrorException, InvalidResponseException, IOException {
+        String uri;
+        try {
+            uri = "/v1/video/delete/?videoId=" + URLEncoder.encode(id, "UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException("UTF-8 is supposed to work", e);
+        }
+        JsonObject result = istribute.get(uri);
+        if (result.containsKey("status")) {
+            if (result.getBoolean("status")) {
+                return; /* Ok */
+            }
+        }
+        throw new InvalidResponseException("This kind of API response was not expected");
     }
 }
