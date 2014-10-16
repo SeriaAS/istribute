@@ -106,7 +106,7 @@ public class Http {
         }
         // Sign the path.
         String signature = null;
-        signature = URLEncoder.encode(hmacDigest(path, appKey, "HmacSHA256"), "UTF-8"); // TODO: Verify logic: anonymous Istribute has a null appKey.
+        signature = URLEncoder.encode(hmacDigest(fragment, appKey, "HmacSHA256"), "UTF-8"); // TODO: Verify logic: anonymous Istribute has a null appKey.
 
         // Construct full endpoint.
         return String.format("%s%s&signature=%s", serverUrl, fragment, signature);

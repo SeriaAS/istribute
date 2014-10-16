@@ -42,7 +42,8 @@ public class Istribute extends Http {
     }
 
     public Video uploadVideo(String filename) throws IOException, IstributeErrorException, InvalidResponseException {
-        JsonObject data = put(String.format("/v1/video/put/?md5=%s", URLEncoder.encode(md5File(filename), "UTF-8")), filename);
+        String url = String.format("/v1/video/put/?md5=%s", URLEncoder.encode(md5File(filename), "UTF-8"));
+        JsonObject data = put(url, filename);
         if (data == null || data.getString("videoId") == null) {
             return null;
         }
