@@ -128,8 +128,9 @@ public class Http {
         }
         if (result instanceof JsonObject) {
             JsonObject data = (JsonObject) result;
-            String error = data.getString("error");
-            if (error != null) {
+            String error;
+            if (data.containsKey("error")) {
+                error = data.getString("error");
                 int code;
                 try {
                     code = data.getInt("code");
