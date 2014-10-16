@@ -112,7 +112,7 @@ public class Http {
         return String.format("%s%s&signature=%s", serverUrl, fragment, signature);
     }
 
-    private <T extends JsonStructure>T parsePayload(String payload) {
+    private <T extends JsonStructure>T parsePayload(String payload) throws IstributeErrorException {
         T result;
 
         InputStream stream = new ByteArrayInputStream(payload.getBytes(StandardCharsets.UTF_8));
@@ -124,6 +124,19 @@ public class Http {
                 try (JsonReader jsonArrayReader = Json.createReader(stream)) {
                     result = (T) jsonArrayReader.readArray();
                 }
+            }
+        }
+        if (result instanceof JsonObject) {
+            JsonObject data = (JsonObject) result;
+            String error = data.getString("error");
+            if (error != null) {
+                int code;
+                try {
+                    code = data.getInt("code");
+                } catch (Exception e) {
+                    code = 0;
+                }
+                throw new IstributeErrorException("[" + code + "] " + error);
             }
         }
         return result;
